@@ -1,7 +1,9 @@
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
+
 from langchain.chains import LLMChain
-from langchain.chat_models import ChatOpenAI
-from langchain.memory import ConversationBufferMemory
+from langchain_openai import ChatOpenAI
+
+from langchain_community.memory import ConversationBufferMemory
 from app.core.config import settings
 from app.db.models import InquiryType, Response
 

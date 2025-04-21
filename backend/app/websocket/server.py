@@ -114,9 +114,15 @@ async def emit_escalation(inquiry, reason):
         'reason': reason
     }, room='agents')
 
-# Helper function to get inquiry (needs to be implemented)
+# Helper function to get inquiry
 async def get_inquiry(inquiry_id):
-    """Get inquiry by ID (placeholder - implement with your ORM)"""
-    # In a real app, fetch from database
-    # For now, return None
-    return None
+    """Get inquiry by ID"""
+    from app.db.session import SessionLocal
+    from app.db.models import Inquiry
+    
+    db = SessionLocal()
+    try:
+        inquiry = db.query(Inquiry).filter(Inquiry.id == inquiry_id).first()
+        return inquiry
+    finally:
+        db.close()

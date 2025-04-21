@@ -1,9 +1,10 @@
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
+
 from langchain.chains import LLMChain
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
+
 from app.core.config import settings
 from app.db.models import InquiryType
-
 # Define classifier prompt template
 classifier_template = """
 You are an AI assistant classifying customer support inquiries for appropriate routing.

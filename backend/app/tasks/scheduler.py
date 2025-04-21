@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from app.db.session import SessionLocal
-from app.db.models import FollowUp, Inquiry, InquiryStatus
+from app.db.models import FollowUp, Inquiry, InquiryStatus, Response
 from app.llm.followup import FollowUpGenerator
 from app.websocket.server import emit_new_response
 
