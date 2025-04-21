@@ -7,6 +7,8 @@ from datetime import datetime
 from app.db.session import get_db
 from app.db.models import Inquiry, InquiryType, InquiryStatus, User
 from app.llm.classifier import InquiryClassifier
+from app.websocket.server import emit_new_inquiry, emit_inquiry_updated, emit_escalation
+from app.core.security import get_current_user, get_current_admin
 
 router = APIRouter()
 classifier = InquiryClassifier()
@@ -71,6 +73,11 @@ async def create_inquiry(inquiry: InquiryCreate, db: Session = Depends(get_db)):
     db.add(db_inquiry)
     db.commit()
     db.refresh(db_inquiry)
+
+    if db_inquiry.escalated:
+        await emit_escalation(db_inquiry, db_inquiry.escalation_reason)
+    else:
+        await emit_new_inquiry(db_inquiry)
     
     return db_inquiry
 
@@ -92,10 +99,15 @@ async def list_inquiries(
     type: Optional[str] = None,
     skip: int = 0, 
     limit: int = 100,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """List inquiries with optional filtering"""
     query = db.query(Inquiry)
+
+    if not current_user.is_admin:
+        query = query.filter(Inquiry.customer_id == current_user.id)
+
     
     # Apply filters if provided
     if status:
@@ -146,4 +158,5 @@ async def update_inquiry(
     
     db.commit()
     db.refresh(db_inquiry)
+    await emit_inquiry_updated(db_inquiry)
     return db_inquiry

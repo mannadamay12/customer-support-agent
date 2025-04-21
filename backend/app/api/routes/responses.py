@@ -7,6 +7,7 @@ from datetime import datetime
 from app.db.session import get_db
 from app.db.models import Response, Inquiry, InquiryStatus, User
 from app.llm.response_generator import ResponseGenerator
+from app.websocket.server import emit_new_response
 
 router = APIRouter()
 response_generator = ResponseGenerator()
@@ -75,6 +76,8 @@ async def create_response(
     
     # Schedule background task to update inquiry status
     background_tasks.add_task(update_inquiry_status, response.inquiry_id, db)
+
+    await emit_new_response(db_response, response.inquiry_id)
     
     return db_response
 
@@ -142,4 +145,6 @@ async def generate_response(
     # Schedule background task to update inquiry status
     background_tasks.add_task(update_inquiry_status, inquiry_id, db)
     
+    await emit_new_response(db_response, inquiry_id)
+
     return db_response

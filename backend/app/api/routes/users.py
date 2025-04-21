@@ -4,7 +4,8 @@ from typing import List, Optional
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 import bcrypt
-
+from fastapi.security import OAuth2PasswordRequestForm
+from app.core.security import create_access_token, get_current_user
 from app.db.session import get_db
 from app.db.models import User
 
@@ -104,13 +105,10 @@ async def list_users(
     users = query.offset(skip).limit(limit).all()
     return users
 
-@router.post("/login")
-async def login_user(user_credentials: UserLogin, db: Session = Depends(get_db)):
-    """Authenticate a user and return basic info"""
-    # In a real application, this would return JWT tokens
-    
-    # Find user by email
-    user = db.query(User).filter(User.email == user_credentials.email).first()
+@router.post("/login", response_model=dict)
+async def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """Authenticate a user and return access token"""
+    user = db.query(User).filter(User.email == form_data.username).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -118,16 +116,24 @@ async def login_user(user_credentials: UserLogin, db: Session = Depends(get_db))
         )
     
     # Verify password
-    if not verify_password(user_credentials.password, user.hashed_password):
+    if not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
         )
     
-    # Return basic user info (in a real app, return JWT token)
+    # Create JWT token
+    access_token = create_access_token(
+        data={"sub": str(user.id)}
+    )
+    
     return {
-        "id": user.id,
-        "email": user.email,
-        "name": user.name,
-        "is_admin": user.is_admin
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "is_admin": user.is_admin
+        }
     }
